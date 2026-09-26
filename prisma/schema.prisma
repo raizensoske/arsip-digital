@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  username  String    @unique
+  password  String
+  name      String
+  role      String    @default("STAFF") // ADMIN or STAFF
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  archives  Archive[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  icon        String?
+  createdAt   DateTime  @default(now())
+  archives    Archive[]
+}
+
+model Archive {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  documentNumber String?
+  date           DateTime
+  sender         String?
+  receiver       String?
+  filePath       String?
+  fileName       String?
+  fileType       String?
+  fileSize       Int?
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id])
+  createdById    String
+  createdBy      User     @relation(fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

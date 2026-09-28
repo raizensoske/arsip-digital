@@ -14,6 +14,7 @@ export async function GET(
       include: {
         category: true,
         createdBy: { select: { name: true, username: true } },
+        files: true,
       },
     });
 
@@ -55,7 +56,7 @@ export async function PUT(
     const sender = formData.get('sender') as string;
     const receiver = formData.get('receiver') as string;
     const categoryId = formData.get('categoryId') as string;
-    const file = formData.get('file') as File | null;
+    const files = formData.getAll('files') as File[];
 
     if (!title || !date || !categoryId) {
       return NextResponse.json(
@@ -74,13 +75,7 @@ export async function PUT(
       categoryId,
     };
 
-    if (file && file.size > 0) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const ext = file.name.split('.').pop();
-      const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-
+    if (files.length > 0 && files[0].size > 0) {
       const fs = require('fs');
       const path = require('path');
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
@@ -89,29 +84,55 @@ export async function PUT(
         fs.mkdirSync(uploadDir, { recursive: true });
       }
 
-      // Delete old file
+      // Delete old files
       const oldArchive = await prisma.archive.findUnique({
         where: { id },
+        include: { files: true },
       });
-      if (oldArchive?.filePath) {
-        const oldPath = path.join(process.cwd(), 'public', oldArchive.filePath);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
+      
+      if (oldArchive?.files) {
+        for (const file of oldArchive.files) {
+          const oldPath = path.join(process.cwd(), 'public', file.filePath);
+          if (fs.existsSync(oldPath)) {
+            fs.unlinkSync(oldPath);
+          }
+        }
+        // Delete from database
+        await prisma.archiveFile.deleteMany({
+          where: { archiveId: id }
+        });
+      }
+
+      const fileDataArray = [];
+
+      for (const file of files) {
+        if (file && file.size > 0) {
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+
+          const ext = file.name.split('.').pop();
+          const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+          
+          fs.writeFileSync(path.join(uploadDir, uniqueName), buffer);
+
+          fileDataArray.push({
+            filePath: `/uploads/${uniqueName}`,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+          });
         }
       }
 
-      fs.writeFileSync(path.join(uploadDir, uniqueName), buffer);
-
-      updateData.filePath = `/uploads/${uniqueName}`;
-      updateData.fileName = file.name;
-      updateData.fileType = file.type;
-      updateData.fileSize = file.size;
+      updateData.files = {
+        create: fileDataArray
+      };
     }
 
     const archive = await prisma.archive.update({
       where: { id },
       data: updateData,
-      include: { category: true },
+      include: { category: true, files: true },
     });
 
     return NextResponse.json(archive);
@@ -135,17 +156,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Delete file if exists
+    // Delete files if exist
     const archive = await prisma.archive.findUnique({
       where: { id },
+      include: { files: true }
     });
 
-    if (archive?.filePath) {
+    if (archive?.files) {
       const fs = require('fs');
       const path = require('path');
-      const filePath = path.join(process.cwd(), 'public', archive.filePath);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      for (const file of archive.files) {
+        const filePath = path.join(process.cwd(), 'public', file.filePath);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
     }
 

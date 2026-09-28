@@ -27,12 +27,9 @@ interface ArchiveDetail {
   date: string;
   sender: string | null;
   receiver: string | null;
-  filePath: string | null;
-  fileName: string | null;
-  fileType: string | null;
-  fileSize: number | null;
   category: { name: string; slug: string };
   createdBy: { name: string; username: string };
+  files: { id: string; filePath: string; fileName: string; fileType: string; fileSize: number }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -82,9 +79,6 @@ export default function ArsipDetailPage() {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
-
-  const isImage = archive?.fileType?.startsWith('image/');
-  const isPdf = archive?.fileType === 'application/pdf';
 
   if (loading) {
     return (
@@ -203,50 +197,59 @@ export default function ArsipDetailPage() {
       </div>
 
       {/* File Viewer */}
-      {archive.filePath && (
-        <div className="file-viewer">
-          <div className="file-viewer-header">
-            <div className="file-viewer-title">
-              {isImage ? <ImageIcon size={18} /> : <FileText size={18} />}
-              {archive.fileName}
-              {archive.fileSize && (
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: 400 }}>
-                  ({formatFileSize(archive.fileSize)})
-                </span>
-              )}
-            </div>
-            <a
-              href={archive.filePath}
-              download={archive.fileName}
-              className="btn btn-secondary btn-sm"
-            >
-              <Download size={14} />
-              Download
-            </a>
-          </div>
-          <div className="file-viewer-body">
-            {isImage ? (
-              <img src={archive.filePath} alt={archive.title} />
-            ) : isPdf ? (
-              <iframe src={archive.filePath} title={archive.title} />
-            ) : (
-              <div style={{ padding: '40px', textAlign: 'center' }}>
-                <FileText size={48} style={{ color: 'var(--text-tertiary)', marginBottom: '12px' }} />
-                <p style={{ color: 'var(--text-secondary)' }}>
-                  Preview tidak tersedia untuk tipe file ini.
-                </p>
-                <a
-                  href={archive.filePath}
-                  download={archive.fileName}
-                  className="btn btn-primary btn-sm"
-                  style={{ marginTop: '12px' }}
-                >
-                  <Download size={14} />
-                  Download File
-                </a>
+      {archive.files && archive.files.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {archive.files.map((file) => {
+            const isImage = file.fileType?.startsWith('image/');
+            const isPdf = file.fileType === 'application/pdf';
+
+            return (
+              <div key={file.id} className="file-viewer">
+                <div className="file-viewer-header">
+                  <div className="file-viewer-title">
+                    {isImage ? <ImageIcon size={18} /> : <FileText size={18} />}
+                    {file.fileName}
+                    {file.fileSize && (
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: 400 }}>
+                        ({formatFileSize(file.fileSize)})
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href={file.filePath}
+                    download={file.fileName}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Download size={14} />
+                    Download
+                  </a>
+                </div>
+                <div className="file-viewer-body">
+                  {isImage ? (
+                    <img src={file.filePath} alt={file.fileName} />
+                  ) : isPdf ? (
+                    <iframe src={file.filePath} title={file.fileName} />
+                  ) : (
+                    <div style={{ padding: '40px', textAlign: 'center' }}>
+                      <FileText size={48} style={{ color: 'var(--text-tertiary)', marginBottom: '12px' }} />
+                      <p style={{ color: 'var(--text-secondary)' }}>
+                        Preview tidak tersedia untuk tipe file ini.
+                      </p>
+                      <a
+                        href={file.filePath}
+                        download={file.fileName}
+                        className="btn btn-primary btn-sm"
+                        style={{ marginTop: '12px' }}
+                      >
+                        <Download size={14} />
+                        Download File
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })}
         </div>
       )}
 

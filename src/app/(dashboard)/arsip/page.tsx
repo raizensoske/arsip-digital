@@ -23,7 +23,7 @@ interface Archive {
   sender: string | null;
   category: { name: string; slug: string };
   createdBy: { name: string };
-  fileName: string | null;
+  _count: { files: number };
   createdAt: string;
 }
 
@@ -214,10 +214,10 @@ export default function ArsipPage() {
                       {archive.sender || '-'}
                     </td>
                     <td>
-                      {archive.fileName ? (
+                      {archive._count?.files > 0 ? (
                         <span className="badge badge-success" style={{ fontSize: '11px' }}>
-                          <FileText size={12} />
-                          Ada
+                          <FileText size={12} style={{ marginRight: '4px' }} />
+                          {archive._count.files} File
                         </span>
                       ) : (
                         <span className="badge badge-warning" style={{ fontSize: '11px' }}>

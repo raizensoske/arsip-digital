@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         include: {
           category: true,
           createdBy: { select: { name: true } },
+          _count: { select: { files: true } },
         },
         orderBy,
         skip: (page - 1) * limit,
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     const sender = formData.get('sender') as string;
     const receiver = formData.get('receiver') as string;
     const categoryId = formData.get('categoryId') as string;
-    const file = formData.get('file') as File | null;
+    const files = formData.getAll('files') as File[];
 
     if (!title || !date || !categoryId) {
       return NextResponse.json(
@@ -96,33 +97,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let filePath = null;
-    let fileName = null;
-    let fileType = null;
-    let fileSize = null;
+    const fileDataArray = [];
 
-    if (file && file.size > 0) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
+    const fs = require('fs');
+    const path = require('path');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
 
-      // Generate unique filename
-      const ext = file.name.split('.').pop();
-      const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-      
-      const fs = require('fs');
-      const path = require('path');
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    for (const file of files) {
+      if (file && file.size > 0) {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        const ext = file.name.split('.').pop();
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        
+        fs.writeFileSync(path.join(uploadDir, uniqueName), buffer);
+
+        fileDataArray.push({
+          filePath: `/uploads/${uniqueName}`,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        });
       }
-
-      fs.writeFileSync(path.join(uploadDir, uniqueName), buffer);
-
-      filePath = `/uploads/${uniqueName}`;
-      fileName = file.name;
-      fileType = file.type;
-      fileSize = file.size;
     }
 
     const archive = await prisma.archive.create({
@@ -134,13 +135,12 @@ export async function POST(request: NextRequest) {
         sender: sender || null,
         receiver: receiver || null,
         categoryId,
-        filePath,
-        fileName,
-        fileType,
-        fileSize,
         createdById: (session.user as any).id,
+        files: {
+          create: fileDataArray,
+        }
       },
-      include: { category: true },
+      include: { category: true, files: true },
     });
 
     return NextResponse.json(archive, { status: 201 });

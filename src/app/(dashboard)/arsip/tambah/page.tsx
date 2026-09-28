@@ -22,7 +22,7 @@ export default function TambahArsipPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
   const [form, setForm] = useState({
@@ -48,12 +48,8 @@ export default function TambahArsipPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFile = (selectedFile: File) => {
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (selectedFile.size > maxSize) {
-      setError('Ukuran file maksimal 10MB');
-      return;
-    }
+  const handleFiles = (selectedFiles: FileList | File[]) => {
+    const maxSize = 30 * 1024 * 1024; // 30MB
     const allowedTypes = [
       'application/pdf',
       'image/jpeg',
@@ -62,19 +58,35 @@ export default function TambahArsipPage() {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      setError('Tipe file tidak didukung. Gunakan PDF, JPG, PNG, atau DOCX.');
-      return;
-    }
-    setFile(selectedFile);
-    setError('');
+
+    const validFiles: File[] = [];
+    let hasError = false;
+
+    Array.from(selectedFiles).forEach((selectedFile) => {
+      if (selectedFile.size > maxSize) {
+        setError('Terdapat file yang ukurannya melebihi maksimal 30MB');
+        hasError = true;
+      } else if (!allowedTypes.includes(selectedFile.type)) {
+        setError('Terdapat tipe file yang tidak didukung. Gunakan PDF, JPG, PNG, atau DOCX.');
+        hasError = true;
+      } else {
+        validFiles.push(selectedFile);
+      }
+    });
+
+    if (!hasError) setError('');
+    setFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
-    if (e.dataTransfer.files?.[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files?.length > 0) {
+      handleFiles(e.dataTransfer.files);
     }
   };
 
@@ -95,8 +107,10 @@ export default function TambahArsipPage() {
       Object.entries(form).forEach(([key, value]) => {
         formData.append(key, value);
       });
-      if (file) {
-        formData.append('file', file);
+      if (files.length > 0) {
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
       }
 
       const res = await fetch('/api/arsip', {
@@ -287,7 +301,7 @@ export default function TambahArsipPage() {
               <span style={{ color: 'var(--text-accent)' }}>pilih file</span>
             </p>
             <p className="file-upload-zone-hint">
-              PDF, JPG, PNG, DOCX — Maks. 10MB
+              PDF, JPG, PNG, DOCX — Maks. 30MB per file
             </p>
           </div>
 
@@ -296,27 +310,35 @@ export default function TambahArsipPage() {
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
             style={{ display: 'none' }}
+            multiple
             onChange={(e) => {
-              if (e.target.files?.[0]) handleFile(e.target.files[0]);
+              if (e.target.files) handleFiles(e.target.files);
             }}
           />
 
-          {file && (
-            <div className="file-preview">
-              <FileText size={20} style={{ color: 'var(--primary-400)' }} />
-              <div className="file-preview-info">
-                <div className="file-preview-name">{file.name}</div>
-                <div className="file-preview-size">
-                  {formatFileSize(file.size)}
+          {files.length > 0 && (
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {files.map((file, idx) => (
+                <div key={idx} className="file-preview" style={{ marginTop: 0 }}>
+                  <FileText size={20} style={{ color: 'var(--primary-400)' }} />
+                  <div className="file-preview-info">
+                    <div className="file-preview-name">{file.name}</div>
+                    <div className="file-preview-size">
+                      {formatFileSize(file.size)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFile(idx);
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-icon"
-                onClick={() => setFile(null)}
-              >
-                <X size={16} />
-              </button>
+              ))}
             </div>
           )}
         </div>

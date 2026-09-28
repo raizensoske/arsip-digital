@@ -63,12 +63,6 @@ async function main() {
       description: 'Foto dokumentasi kegiatan dan proyek',
       icon: 'camera',
     },
-    {
-      name: 'Gambar Teknis',
-      slug: 'gambar-teknis',
-      description: 'Gambar teknis, denah, dan peta',
-      icon: 'ruler',
-    },
   ];
 
   for (const cat of categories) {

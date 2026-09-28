@@ -36,14 +36,22 @@ model Archive {
   date           DateTime
   sender         String?
   receiver       String?
-  filePath       String?
-  fileName       String?
-  fileType       String?
-  fileSize       Int?
+  files          ArchiveFile[]
   categoryId     String
   category       Category @relation(fields: [categoryId], references: [id])
   createdById    String
   createdBy      User     @relation(fields: [createdById], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model ArchiveFile {
+  id        String   @id @default(cuid())
+  archiveId String
+  archive   Archive  @relation(fields: [archiveId], references: [id], onDelete: Cascade)
+  filePath  String
+  fileName  String
+  fileType  String
+  fileSize  Int
+  createdAt DateTime @default(now())
 }

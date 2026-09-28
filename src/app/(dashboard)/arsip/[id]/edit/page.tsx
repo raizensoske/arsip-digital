@@ -24,8 +24,8 @@ export default function EditArsipPage() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [existingFile, setExistingFile] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<{ fileName: string }[]>([]);
 
   const [form, setForm] = useState({
     title: '',
@@ -52,7 +52,7 @@ export default function EditArsipPage() {
           receiver: archive.receiver || '',
           categoryId: archive.categoryId || '',
         });
-        setExistingFile(archive.fileName);
+        setExistingFiles(archive.files || []);
         setCategories(cats);
       })
       .catch(() => router.push('/arsip'))
@@ -65,14 +65,38 @@ export default function EditArsipPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFile = (selectedFile: File) => {
-    const maxSize = 10 * 1024 * 1024;
-    if (selectedFile.size > maxSize) {
-      setError('Ukuran file maksimal 10MB');
-      return;
-    }
-    setFile(selectedFile);
-    setError('');
+  const handleFiles = (selectedFiles: FileList | File[]) => {
+    const maxSize = 30 * 1024 * 1024; // 30MB
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
+    const validFiles: File[] = [];
+    let hasError = false;
+
+    Array.from(selectedFiles).forEach((selectedFile) => {
+      if (selectedFile.size > maxSize) {
+        setError('Terdapat file yang ukurannya melebihi maksimal 30MB');
+        hasError = true;
+      } else if (!allowedTypes.includes(selectedFile.type)) {
+        setError('Terdapat tipe file yang tidak didukung. Gunakan PDF, JPG, PNG, atau DOCX.');
+        hasError = true;
+      } else {
+        validFiles.push(selectedFile);
+      }
+    });
+
+    if (!hasError) setError('');
+    setFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,8 +116,10 @@ export default function EditArsipPage() {
       Object.entries(form).forEach(([key, value]) => {
         formData.append(key, value);
       });
-      if (file) {
-        formData.append('file', file);
+      if (files.length > 0) {
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
       }
 
       const res = await fetch(`/api/arsip/${params.id}`, {
@@ -225,13 +251,17 @@ export default function EditArsipPage() {
             File Dokumen
           </h3>
 
-          {existingFile && !file && (
-            <div className="file-preview" style={{ marginBottom: '16px' }}>
-              <FileText size={20} style={{ color: 'var(--primary-400)' }} />
-              <div className="file-preview-info">
-                <div className="file-preview-name">{existingFile}</div>
-                <div className="file-preview-size">File saat ini</div>
-              </div>
+          {existingFiles.length > 0 && files.length === 0 && (
+            <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {existingFiles.map((f, idx) => (
+                <div key={idx} className="file-preview" style={{ marginTop: 0 }}>
+                  <FileText size={20} style={{ color: 'var(--primary-400)' }} />
+                  <div className="file-preview-info">
+                    <div className="file-preview-name">{f.fileName}</div>
+                    <div className="file-preview-size">File saat ini</div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -241,30 +271,38 @@ export default function EditArsipPage() {
           >
             <Upload size={32} className="file-upload-zone-icon" />
             <p className="file-upload-zone-text">
-              {existingFile ? 'Pilih file baru untuk mengganti' : 'Pilih file untuk diupload'}
+              {existingFiles.length > 0 ? 'Pilih file baru untuk mengganti semua file lama' : 'Pilih file untuk diupload'}
             </p>
-            <p className="file-upload-zone-hint">PDF, JPG, PNG, DOCX — Maks. 10MB</p>
+            <p className="file-upload-zone-hint">PDF, JPG, PNG, DOCX — Maks. 30MB per file</p>
           </div>
 
           <input
             id="file-input" type="file"
             accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
             style={{ display: 'none' }}
+            multiple
             onChange={(e) => {
-              if (e.target.files?.[0]) handleFile(e.target.files[0]);
+              if (e.target.files) handleFiles(e.target.files);
             }}
           />
 
-          {file && (
-            <div className="file-preview">
-              <FileText size={20} style={{ color: 'var(--primary-400)' }} />
-              <div className="file-preview-info">
-                <div className="file-preview-name">{file.name}</div>
-                <div className="file-preview-size">{formatFileSize(file.size)}</div>
-              </div>
-              <button type="button" className="btn btn-ghost btn-icon" onClick={() => setFile(null)}>
-                <X size={16} />
-              </button>
+          {files.length > 0 && (
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {files.map((file, idx) => (
+                <div key={idx} className="file-preview" style={{ marginTop: 0 }}>
+                  <FileText size={20} style={{ color: 'var(--primary-400)' }} />
+                  <div className="file-preview-info">
+                    <div className="file-preview-name">{file.name}</div>
+                    <div className="file-preview-size">{formatFileSize(file.size)}</div>
+                  </div>
+                  <button type="button" className="btn btn-ghost btn-icon" onClick={(e) => {
+                    e.stopPropagation();
+                    removeFile(idx);
+                  }}>
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>

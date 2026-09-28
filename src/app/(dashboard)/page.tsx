@@ -44,7 +44,6 @@ const categoryIcons: Record<string, any> = {
   'dokumen-proyek': FolderKanban,
   'laporan': FileText,
   'foto-dokumentasi': Camera,
-  'gambar-teknis': Ruler,
 };
 
 export default function DashboardPage() {
@@ -66,9 +65,13 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/dashboard');
       const data = await res.json();
-      setStats(data.stats);
-      setCategoryCounts(data.categoryCounts);
-      setRecentArchives(data.recentArchives);
+      if (res.ok) {
+        setStats(data.stats || { totalArchives: 0, monthArchives: 0, totalCategories: 0, totalUsers: 0 });
+        setCategoryCounts(data.categoryCounts || []);
+        setRecentArchives(data.recentArchives || []);
+      } else {
+        console.error('API Error:', data.error);
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard:', error);
     } finally {

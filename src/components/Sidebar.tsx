@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { useTheme } from './ThemeProvider';
 import {
   Archive,
   LayoutDashboard,
@@ -11,6 +12,8 @@ import {
   Users,
   LogOut,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,6 +51,7 @@ const menuItems: MenuSection[] = [
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { theme, toggleTheme } = useTheme();
   const userRole = (session?.user as any)?.role || 'STAFF';
   const userName = session?.user?.name || 'User';
 
@@ -73,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
           <div className="sidebar-logo-text">
             <h1>Arsip Digital</h1>
-            <span>UPTD Jalan & Jembatan</span>
+            <span>UPTD Jalan &amp; Jembatan</span>
           </div>
           <button
             className="mobile-menu-btn"
@@ -106,6 +110,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="sidebar-footer">
+          {/* Theme Toggle */}
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'light' ? 'Ganti ke Mode Gelap' : 'Ganti ke Mode Terang'}
+          >
+            <div className="theme-toggle-track">
+              <Sun size={14} className="theme-toggle-icon theme-toggle-sun" />
+              <Moon size={14} className="theme-toggle-icon theme-toggle-moon" />
+              <div className="theme-toggle-thumb" />
+            </div>
+            <span>{theme === 'light' ? 'Mode Terang' : 'Mode Gelap'}</span>
+          </button>
+
           <div className="sidebar-user">
             <div className="sidebar-user-avatar">
               {userName.charAt(0).toUpperCase()}

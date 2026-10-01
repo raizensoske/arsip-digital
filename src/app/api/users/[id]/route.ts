@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import type { Prisma } from '@prisma/client';
 
 export async function PUT(
   request: NextRequest,
@@ -18,10 +19,16 @@ export async function PUT(
     const body = await request.json();
     const { name, role, password } = body;
 
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (name) updateData.name = name;
     if (role) updateData.role = role;
     if (password) {
+      if (password.length < 6) {
+        return NextResponse.json(
+          { error: 'Password minimal 6 karakter' },
+          { status: 400 }
+        );
+      }
       updateData.password = await bcrypt.hash(password, 12);
     }
 

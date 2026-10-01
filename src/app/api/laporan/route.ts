@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category') || '';
     const startDate = searchParams.get('startDate') || '';
     const endDate = searchParams.get('endDate') || '';
 
-    const where: any = {};
+    const where: Prisma.ArchiveWhereInput = {};
 
     if (category) {
       where.categoryId = category;
@@ -30,6 +38,7 @@ export async function GET(request: NextRequest) {
       include: {
         category: true,
         createdBy: { select: { name: true } },
+        files: { select: { fileName: true } },
       },
       orderBy: { date: 'desc' },
     });
@@ -47,6 +56,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       archives: archives.map((a) => ({
         ...a,
+        fileName: a.files[0]?.fileName ?? null,
+        fileCount: a.files.length,
+        files: undefined,
         date: a.date.toISOString(),
         createdAt: a.createdAt.toISOString(),
         updatedAt: a.updatedAt.toISOString(),

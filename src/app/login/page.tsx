@@ -154,7 +154,7 @@ export default function LoginPage() {
             color: 'var(--text-tertiary)',
           }}
         >
-          © 2024 UPTD Jalan dan Jembatan — Dinas BMBK Prov. Lampung
+          © {new Date().getFullYear()} UPTD Jalan dan Jembatan — Dinas BMBK Prov. Lampung
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
 export async function GET() {
@@ -52,6 +52,22 @@ export async function POST(request: NextRequest) {
     if (!username || !password || !name) {
       return NextResponse.json(
         { error: 'Username, password, dan nama wajib diisi' },
+        { status: 400 }
+      );
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password minimal 6 karakter' },
+        { status: 400 }
+      );
+    }
+
+    // Username validation
+    if (username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      return NextResponse.json(
+        { error: 'Username minimal 3 karakter dan hanya boleh huruf, angka, dan underscore' },
         { status: 400 }
       );
     }

@@ -18,6 +18,7 @@ import {
   Send,
   AlertTriangle,
 } from 'lucide-react';
+import { formatDateLong, formatFileSize } from '@/lib/utils';
 
 interface ArchiveDetail {
   id: string;
@@ -65,20 +66,7 @@ export default function ArsipDetailPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   if (loading) {
     return (
@@ -145,7 +133,7 @@ export default function ArsipDetailPage() {
               Tanggal
             </div>
             <div className="detail-item-value">
-              {formatDate(archive.date)}
+              {formatDateLong(archive.date)}
             </div>
           </div>
 
@@ -255,8 +243,8 @@ export default function ArsipDetailPage() {
 
       {/* Metadata */}
       <div style={{ marginTop: '24px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
-        <p>Dibuat: {formatDate(archive.createdAt)}</p>
-        <p>Terakhir diubah: {formatDate(archive.updatedAt)}</p>
+        <p>Dibuat: {formatDateLong(archive.createdAt)}</p>
+        <p>Terakhir diubah: {formatDateLong(archive.updatedAt)}</p>
       </div>
 
       {/* Delete Confirmation */}

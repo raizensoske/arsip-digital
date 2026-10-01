@@ -89,12 +89,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <nav className="sidebar-nav">
-          {menuItems.map((section) => (
-            <div key={section.label}>
-              <div className="sidebar-section-label">{section.label}</div>
-              {section.items
-                .filter((item) => !item.adminOnly || userRole === 'ADMIN')
-                .map((item) => (
+          {menuItems.map((section) => {
+            const visibleItems = section.items.filter(
+              (item) => !item.adminOnly || userRole === 'ADMIN'
+            );
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={section.label}>
+                <div className="sidebar-section-label">{section.label}</div>
+                {visibleItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -105,8 +108,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     {item.text}
                   </Link>
                 ))}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="sidebar-footer">

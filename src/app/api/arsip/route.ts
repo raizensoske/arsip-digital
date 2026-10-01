@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
+import { uploadFiles } from '@/lib/server-utils';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
@@ -12,7 +19,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const sort = searchParams.get('sort') || 'newest';
 
-    const where: any = {};
+    const where: Prisma.ArchiveWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -28,7 +35,7 @@ export async function GET(request: NextRequest) {
       where.categoryId = category;
     }
 
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: Prisma.ArchiveOrderByWithRelationInput = { createdAt: 'desc' };
     if (sort === 'oldest') orderBy = { createdAt: 'asc' };
     if (sort === 'title-asc') orderBy = { title: 'asc' };
     if (sort === 'title-desc') orderBy = { title: 'desc' };
@@ -97,34 +104,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fileDataArray = [];
-
-    const fs = require('fs');
-    const path = require('path');
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    for (const file of files) {
-      if (file && file.size > 0) {
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const ext = file.name.split('.').pop();
-        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        
-        fs.writeFileSync(path.join(uploadDir, uniqueName), buffer);
-
-        fileDataArray.push({
-          filePath: `/uploads/${uniqueName}`,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-        });
-      }
-    }
+    const fileDataArray = await uploadFiles(files);
 
     const archive = await prisma.archive.create({
       data: {

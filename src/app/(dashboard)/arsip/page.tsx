@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,6 +14,7 @@ import {
   ChevronRight,
   AlertTriangle,
 } from 'lucide-react';
+import { formatDateShort } from '@/lib/utils';
 
 interface Archive {
   id: string;
@@ -40,18 +41,20 @@ export default function ArsipPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sort, setSort] = useState('newest');
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const fetchArchives = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        search,
+        search: debouncedSearch,
         category: categoryFilter,
         sort,
       });
@@ -66,15 +69,26 @@ export default function ArsipPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, categoryFilter, sort]);
+  }, [page, debouncedSearch, categoryFilter, sort]);
 
   useEffect(() => {
     fetchArchives();
   }, [fetchArchives]);
 
+  // Debounce search input
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [search]);
+
   useEffect(() => {
     setPage(1);
-  }, [search, categoryFilter, sort]);
+  }, [debouncedSearch, categoryFilter, sort]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -90,13 +104,7 @@ export default function ArsipPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+
 
   return (
     <div className="animate-fadeIn">
@@ -208,7 +216,7 @@ export default function ArsipPage() {
                       </span>
                     </td>
                     <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                      {formatDate(archive.date)}
+                      {formatDateShort(archive.date)}
                     </td>
                     <td style={{ color: 'var(--text-secondary)' }}>
                       {archive.sender || '-'}

@@ -13,6 +13,7 @@ import {
   Shield,
   Save,
 } from 'lucide-react';
+import { formatDateShort } from '@/lib/utils';
 
 interface UserItem {
   id: string;
@@ -152,13 +153,7 @@ export default function UsersPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+
 
   if (loading) {
     return (
@@ -213,7 +208,7 @@ export default function UsersPage() {
                   {user.archiveCount}
                 </td>
                 <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                  {formatDate(user.createdAt)}
+                  {formatDateShort(user.createdAt)}
                 </td>
                 <td>
                   <div className="table-actions">

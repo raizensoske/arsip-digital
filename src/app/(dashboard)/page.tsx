@@ -12,9 +12,9 @@ import {
   Inbox,
   Send,
   Camera,
-  Ruler,
   Clock,
 } from 'lucide-react';
+import { formatDateShort } from '@/lib/utils';
 
 interface Stats {
   totalArchives: number;
@@ -79,13 +79,7 @@ export default function DashboardPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+
 
   const maxCount = Math.max(...categoryCounts.map((c) => c.count), 1);
 
@@ -215,7 +209,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="recent-item-date">
-                      {formatDate(archive.date)}
+                      {formatDateShort(archive.date)}
                     </div>
                   </Link>
                 );

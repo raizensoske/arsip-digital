@@ -7,6 +7,7 @@ import {
   FileText,
   Calendar,
 } from 'lucide-react';
+import { formatDateShort } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -23,6 +24,7 @@ interface ReportArchive {
   category: { name: string };
   createdBy: { name: string };
   fileName: string | null;
+  fileCount: number;
 }
 
 interface Summary {
@@ -74,18 +76,12 @@ export default function LaporanPage() {
     window.print();
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+
 
   const getFilterDescription = () => {
     const parts: string[] = [];
-    if (filters.startDate) parts.push(`dari ${formatDate(filters.startDate)}`);
-    if (filters.endDate) parts.push(`sampai ${formatDate(filters.endDate)}`);
+    if (filters.startDate) parts.push(`dari ${formatDateShort(filters.startDate)}`);
+    if (filters.endDate) parts.push(`sampai ${formatDateShort(filters.endDate)}`);
     if (filters.category) {
       const cat = categories.find((c) => c.id === filters.category);
       if (cat) parts.push(`kategori: ${cat.name}`);
@@ -236,7 +232,7 @@ export default function LaporanPage() {
                         </span>
                       </td>
                       <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                        {formatDate(archive.date)}
+                        {formatDateShort(archive.date)}
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>
                         {archive.sender || '-'}

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
+import { uploadFiles, deleteUploadedFile } from '@/lib/server-utils';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const archive = await prisma.archive.findUnique({
       where: { id },
@@ -65,26 +72,18 @@ export async function PUT(
       );
     }
 
-    const updateData: any = {
+    const updateData: Prisma.ArchiveUpdateInput = {
       title,
       description: description || null,
       documentNumber: documentNumber || null,
       date: new Date(date),
       sender: sender || null,
       receiver: receiver || null,
-      categoryId,
+      category: { connect: { id: categoryId } },
     };
 
     if (files.length > 0 && files[0].size > 0) {
-      const fs = require('fs');
-      const path = require('path');
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      // Delete old files
+      // Delete old files from disk and database
       const oldArchive = await prisma.archive.findUnique({
         where: { id },
         include: { files: true },
@@ -92,37 +91,14 @@ export async function PUT(
       
       if (oldArchive?.files) {
         for (const file of oldArchive.files) {
-          const oldPath = path.join(process.cwd(), 'public', file.filePath);
-          if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
-          }
+          deleteUploadedFile(file.filePath);
         }
-        // Delete from database
         await prisma.archiveFile.deleteMany({
           where: { archiveId: id }
         });
       }
 
-      const fileDataArray = [];
-
-      for (const file of files) {
-        if (file && file.size > 0) {
-          const bytes = await file.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-
-          const ext = file.name.split('.').pop();
-          const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-          
-          fs.writeFileSync(path.join(uploadDir, uniqueName), buffer);
-
-          fileDataArray.push({
-            filePath: `/uploads/${uniqueName}`,
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-          });
-        }
-      }
+      const fileDataArray = await uploadFiles(files);
 
       updateData.files = {
         create: fileDataArray
@@ -156,20 +132,30 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Delete files if exist
+    const userRole = (session.user as any).role;
+    const userId = (session.user as any).id;
+
+    // Only ADMIN or the archive creator can delete
     const archive = await prisma.archive.findUnique({
       where: { id },
       include: { files: true }
     });
 
-    if (archive?.files) {
-      const fs = require('fs');
-      const path = require('path');
+    if (!archive) {
+      return NextResponse.json({ error: 'Arsip tidak ditemukan' }, { status: 404 });
+    }
+
+    if (userRole !== 'ADMIN' && archive.createdById !== userId) {
+      return NextResponse.json(
+        { error: 'Anda tidak memiliki izin untuk menghapus arsip ini' },
+        { status: 403 }
+      );
+    }
+
+    // Delete files from disk
+    if (archive.files) {
       for (const file of archive.files) {
-        const filePath = path.join(process.cwd(), 'public', file.filePath);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
+        deleteUploadedFile(file.filePath);
       }
     }
 

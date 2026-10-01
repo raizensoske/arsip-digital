@@ -1,58 +1,69 @@
 ﻿# Sistem Arsip Digital — UPTD Jalan dan Jembatan
 
-Sistem Arsip Digital untuk **UPTD Jalan dan Jembatan, Dinas Bina Marga dan Bina Konstruksi (BMBK) Provinsi Lampung**. Mengelola surat masuk, surat keluar, dokumen proyek, laporan, dan foto dokumentasi secara terpusat dengan akses berbasis peran (ADMIN / STAFF).
+Sistem Arsip Digital untuk **UPTD Jalan dan Jembatan, Dinas Bina Marga dan Bina Konstruksi (BMBK) Provinsi Lampung**.
 
 ## Fitur
 
-- **Dashboard** — statistik arsip, distribusi per kategori (bar chart), arsip terbaru
-- **Arsip Dokumen** — CRUD + upload multi-file (PDF/JPG/PNG/DOCX, max 30 MB/file), pencarian, filter kategori, sorting & pagination
-- **Detail Arsip** — viewer file (image inline, PDF iframe), download, hapus dengan konfirmasi
-- **Cetak Laporan** — filter rentang tanggal & kategori, summary per kategori, cetak via window.print
-- **Kelola User** (ADMIN) — tambah/edit/hapus user, validasi username & password
-- **Auth & RBAC** — NextAuth Credentials + bcrypt, middleware guard, STAFF tidak bisa akses /users
-- **Tema Terang/Gelap** — persist localStorage, anti-flash script di layout.tsx
+- **Dashboard** — statistik, distribusi per kategori, arsip terbaru
+- **Arsip Dokumen** — CRUD + upload multi-file (PDF/JPG/PNG/DOCX, max 30 MB/file), pencarian, filter, pagination
+- **Detail Arsip** — viewer (image inline, PDF iframe), download, hapus
+- **Cetak Laporan** — filter tanggal & kategori, summary, window.print
+- **Kelola User** (ADMIN) — tambah/edit/hapus, validasi
+- **Auth & RBAC** — NextAuth Credentials + bcrypt, middleware guard
+- **Tema Terang/Gelap** — persist localStorage
 
-## Prasyarat
-
-- Node.js 20+
-- npm
-
-## Cara Menjalankan (Lokal)
+## Lokal (dev)
 
 ```bash
-# 1. Install
 npm install
-
-# 2. Env — copy dan isi
-# wajib: NEXTAUTH_SECRET (generate: openssl rand -base64 32)
-#       NEXTAUTH_URL=http://localhost:3000
-
-# 3. Database (SQLite: prisma/dev.db)
-npx prisma migrate dev
-npm run seed
-
-# 4. Dev server
-npm run dev   # http://localhost:3000
-
-# 5. Build check
-npm run build
+# .env — wajib:
+# NEXTAUTH_SECRET=... (openssl rand -base64 32)
+# NEXTAUTH_URL=http://localhost:3000
+# DATABASE_URL=postgresql://... (Neon/Supabase)  ATAU file:./dev.db jika masih SQLite
+npx prisma migrate dev   # pertama kali
+npm run seed             # admin/admin123, staff/staff123 + 5 kategori
+npm run dev              # http://localhost:3000
+npm run build            # cek build
 ```
-
-## Akun Default (dari seed)
 
 | Username | Password | Role  |
 |----------|----------|-------|
 | admin    | admin123 | ADMIN |
 | staff    | staff123 | STAFF |
 
-Ganti password setelah login pertama. Seed ada di prisma/seed.js (5 kategori default).
+## Deploy ke Vercel (Postgres + Blob)
 
-## Catatan & Limitasi (untuk Laporan KP)
+**1. Buat database Postgres gratis:**
+- Neon: https://neon.tech → Create Project → copy connection string (`postgresql://...?sslmode=require`)
+- Atau Supabase / Vercel Postgres
 
-- **DB SQLite** — cocok untuk KP / single-instance. Untuk produksi multi-user, migrasi ke PostgreSQL.
-- **Upload** — disimpan di public/uploads (filesystem). Untuk scale, pertimbangkan object storage (S3/R2).
-- **NEXTAUTH_SECRET** — wajib di-set via .env; tidak ada fallback hardcoded (akan error jika kosong — sengaja untuk keamanan).
+**2. Import project di Vercel:**
+- https://vercel.com/new → Import `raizensoske/arsip-digital` → Framework: Next.js
 
-## Lisensi
+**3. Set Environment Variables di Vercel (Project → Settings → Environment Variables):**
+```
+DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require
+NEXTAUTH_SECRET=<openssl rand -base64 32>
+NEXTAUTH_URL=https://<nama-app>.vercel.app
+BLOB_READ_WRITE_TOKEN=<akan auto-terisi setelah add Blob store, atau generate di Vercel>
+```
 
-Internal UPTD — tidak untuk distribusi publik.
+**4. Enable Vercel Blob untuk upload persisten:**
+- Vercel Dashboard → Project → Storage → Create Store → Blob → Connect to project
+- `BLOB_READ_WRITE_TOKEN` akan otomatis ter-inject. Tanpa ini, upload di Vercel akan hilang tiap deploy (fallback lokal tidak persisten di serverless).
+
+**5. Deploy:**
+- Push ke master auto-deploy, atau klik Deploy.
+- Setelah deploy sukses, jalankan sekali (via Vercel → Storage/Browser atau lokal dengan DATABASE_URL prod):
+```bash
+DATABASE_URL="postgresql://..." npx prisma migrate deploy
+DATABASE_URL="postgresql://..." npm run seed
+```
+
+**Catatan upload:**
+- `src/lib/server-utils.ts` otomatis pakai `@vercel/blob` jika `BLOB_READ_WRITE_TOKEN` ada, fallback ke `public/uploads` untuk lokal.
+- Pastikan Vercel Blob store sudah dikonek sebelum upload di production.
+
+## Env
+
+Lihat `.env.example`. Jangan commit `.env` (sudah di .gitignore).

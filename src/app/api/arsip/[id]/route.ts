@@ -91,7 +91,7 @@ export async function PUT(
       
       if (oldArchive?.files) {
         for (const file of oldArchive.files) {
-          deleteUploadedFile(file.filePath);
+          await deleteUploadedFile(file.filePath);
         }
         await prisma.archiveFile.deleteMany({
           where: { archiveId: id }
@@ -152,10 +152,10 @@ export async function DELETE(
       );
     }
 
-    // Delete files from disk
+    // Delete files from disk / Blob
     if (archive.files) {
       for (const file of archive.files) {
-        deleteUploadedFile(file.filePath);
+        await deleteUploadedFile(file.filePath);
       }
     }
 

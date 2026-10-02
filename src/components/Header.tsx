@@ -16,7 +16,7 @@ export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
           <Menu size={20} />
         </button>
         <div className="header-breadcrumb">
-          <span className="header-breadcrumb-item">Arsip Digital</span>
+          <span className="header-breadcrumb-item">ARUNIKA</span>
           <span className="header-breadcrumb-separator">/</span>
           <span className="header-breadcrumb-item current">{title}</span>
           {subtitle && (

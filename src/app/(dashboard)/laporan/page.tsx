@@ -94,8 +94,8 @@ export default function LaporanPage() {
       {/* Print Header (hidden on screen) */}
       <div className="print-only">
         <div className="print-header">
-          <h1>LAPORAN ARSIP DOKUMEN</h1>
-          <p>UPTD Jalan dan Jembatan — Dinas BMBK Provinsi Lampung</p>
+          <h1>LAPORAN ARSIP DOKUMEN — ARUNIKA</h1>
+          <p>Arsip UPTD Jalan dan Jembatan Bina Konstruksi — Dinas BMBK Provinsi Lampung</p>
           <p style={{ marginTop: '8px' }}>Filter: {getFilterDescription()}</p>
           <p>Dicetak pada: {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>

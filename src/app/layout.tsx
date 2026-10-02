@@ -4,10 +4,10 @@ import AuthProvider from '@/components/AuthProvider';
 import ThemeProvider from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'Sistem Arsip Digital — UPTD Jalan & Jembatan',
+  title: 'ARUNIKA — Arsip UPTD Jalan & Jembatan',
   description:
-    'Sistem Arsip Digital UPTD Jalan dan Jembatan, Dinas BMBK Provinsi Lampung. Kelola surat masuk, surat keluar, dokumen proyek, dan arsip digital lainnya.',
-  keywords: 'arsip digital, UPTD, jalan, jembatan, lampung, dinas BMBK',
+    'ARUNIKA (Arsip UPTD Jalan dan Jembatan Bina Konstruksi), Dinas BMBK Provinsi Lampung. Kelola surat masuk, surat keluar, dokumen proyek, dan arsip digital lainnya.',
+  keywords: 'arunika, arsip digital, UPTD, jalan, jembatan, lampung, dinas BMBK',
 };
 
 export default function RootLayout({

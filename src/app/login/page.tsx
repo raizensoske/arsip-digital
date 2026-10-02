@@ -45,9 +45,9 @@ export default function LoginPage() {
           <div className="login-logo">
             <Archive size={32} />
           </div>
-          <h1 className="login-title">Sistem Arsip Digital</h1>
+          <h1 className="login-title">ARUNIKA</h1>
           <p className="login-subtitle">
-            UPTD Jalan dan Jembatan<br />
+            Arsip UPTD Jalan dan Jembatan Bina Konstruksi<br />
             Dinas BMBK Provinsi Lampung
           </p>
         </div>

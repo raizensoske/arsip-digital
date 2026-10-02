@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Selamat datang di Sistem Arsip Digital</p>
+          <p className="page-subtitle">Selamat datang di ARUNIKA</p>
         </div>
         <Link href="/arsip/tambah" className="btn btn-primary">
           <Plus size={18} />

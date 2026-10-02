@@ -76,7 +76,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Archive size={22} />
           </div>
           <div className="sidebar-logo-text">
-            <h1>Arsip Digital</h1>
+            <h1>ARUNIKA</h1>
             <span>UPTD Jalan &amp; Jembatan</span>
           </div>
           <button
